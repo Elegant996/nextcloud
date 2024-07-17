@@ -82,7 +82,7 @@ jobs:
   build-image:
     name: 'Build docker image'
     runs-on: ubuntu-latest
-    needs: update-docs
+    needs: [ dependabot, update-docs ]
     if: ${{ needs.dependabot.outputs.dockerUpdate }} == 'true'
 
     permissions:
