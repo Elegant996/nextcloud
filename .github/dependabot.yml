@@ -1,0 +1,11 @@
+version: 2
+updates:
+  # Update GitHub actions
+  - directory: /
+    package-ecosystem: github-actions
+    schedule:
+      interval: daily
+    commit-message:
+      prefix: ci
+    labels:
+      - dependencies
