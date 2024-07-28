@@ -11,3 +11,4 @@ LABEL org.opencontainers.image.licenses="AGPL-3.0-only"
 LABEL org.opencontainers.image.source="https://github.com/nextcloud/server"
 LABEL org.opencontainers.image.title="nextcloud"
 LABEL org.opencontainers.image.version=${VERSION}
+LABEL org.opencontainers.image.url="https://nextcloud.com/"
