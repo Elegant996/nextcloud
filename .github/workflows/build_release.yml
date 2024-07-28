@@ -84,7 +84,7 @@ jobs:
         platforms: linux/${{ matrix.arch }}
         push: true
         tags: |
-          ghcr.io/${{ steps.repo_slug.outputs.result }}:${{ inputs.releaseVersion }}
+          ghcr.io/${{ steps.repo_slug.outputs.result }}:${{ inputs.releaseVersion }}-fpm-alpine
           ghcr.io/${{ steps.repo_slug.outputs.result }}:latest
 
     - name: Generate changelog
