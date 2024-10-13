@@ -146,11 +146,11 @@
         header *.wasm Content-Type application/wasm
         log_skip @assetFiles
 
-        @woff2Files {
-                path *.woff *.woff2
+        @fontFiles {
+                path *.otf *.woff *.woff2
         }
-        header @woff2Files Cache-Control max-age=2592000
-        log_skip @woff2Files
+        header @fontFiles Cache-Control max-age=2592000
+        log_skip @fontFiles
 
         php_fastcgi unix//run/php-fpm/php-fpm.sock {
                 env front_controller_active true
