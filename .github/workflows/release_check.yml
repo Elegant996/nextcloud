@@ -21,5 +21,4 @@ jobs:
     needs: 
     - masterPoll
     with:
-      existingTag: '${{ needs.masterPoll.outputs.latestTag }}'
-      releaseVersion: '${{ needs.masterPoll.outputs.upstreamVersion }}'
+      upstreamVersion: '${{ needs.masterPoll.outputs.upstreamVersion }}'
