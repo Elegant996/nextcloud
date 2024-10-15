@@ -49,7 +49,7 @@ jobs:
           | sort --version-sort \
           | tail -n 1)
         
-        echo "version=${TAG//v}" >> $GITHUB_OUTPUT
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
     - name: Check if tag exists
       uses: mukunku/tag-exists-action@v1.6.0
