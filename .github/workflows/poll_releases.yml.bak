@@ -1,0 +1,110 @@
+name: Poll branch releases
+on:
+  push:
+
+  # Daily
+  schedule:
+    - cron:  '0 0 * * *'
+
+  # Manually
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check-upstream:
+    name: Check upstream version
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: true
+
+    outputs:
+      update-matrix: ${{ steps.release.outputs.update-matrix }}
+
+    steps:
+      - name: Get upstream version
+        id: upstream
+        run: |
+          VERSION=$(curl -sL --request GET \
+            --url "https://hub.docker.com/v2/repositories/library/nextcloud/tags/?page_size=1000" \
+            | jq -r '.results | .[] | select(.name | contains("-") | not) | .name' \
+            | sed -r '/(latest|stable|production|fpm|apache)/d' \
+            | sort --version-sort \
+            | tail -n 1)
+
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Check if tag exists
+        uses: mukunku/tag-exists-action@v1.6.0
+        id: check-tag
+        with:
+          tag: 'v${{ steps.upstream.outputs.version }}'
+
+      - name: Store release
+        id: release
+        if: ${{ !fromJSON(steps.check-tag.outputs.exists) }}
+        run: |
+            echo 'update-matrix=[{"tag":"v${{ steps.upstream.outputs.version }}","version":"${{ steps.upstream.outputs.version }}"}]' >> $GITHUB_OUTPUT
+
+  commit-and-push:
+    needs: [check-upstream]
+    name: Push commits and release upstream version
+    runs-on: ubuntu-latest
+    if: needs.check-upstream.outputs.update-matrix != ''
+
+    strategy:
+      fail-fast: true
+      matrix:
+        include: ${{ needs.check-upstream.outputs.update-matrix }}
+
+    steps:
+      - uses: actions/checkout@v4
+    
+      - name: Update Readme
+        uses: jacobtomlinson/gha-find-replace@v3
+        with:
+          find: ${{ vars.RELEASE_VERSION }}
+          replace: ${{ matrix.version }}
+          include: 'README.md'
+          regex: false
+
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          committer_name: GitHub Actions
+          committer_email: actions@github.com
+          message: 'docs: Bump image version to ${{ matrix.version }}'
+          tag: '${{ matrix.tag }}'
+
+  publish-release:
+    needs: [check-upstream,commit-and-push]
+    name: Publish releases
+    runs-on: ubuntu-latest
+    if: needs.check-upstream.outputs.update-matrix != ''
+
+    strategy:
+      fail-fast: true
+      matrix:
+        include: ${{ fromJSON(needs.check-upstream.outputs.update-matrix) }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publish release
+        uses: ncipollo/release-action@v1
+        with:
+          prerelease: ${{ fromJSON(matrix.prerelease) }}
+          tag: ${{ matrix.tag }}
+          token: ${{ secrets.WF_PAT }}
+
+      - name: Update repository variables
+        run: |
+          if [[ "${{ !fromJSON(matrix.prerelease) }}" == "true" ]]; then
+            gh variable set RELEASE_VERSION --body "${{ matrix.version }}"
+          else
+            gh variable set PRERELEASE_VERSION --body "${{ matrix.version }}"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.VARS_PAT }}

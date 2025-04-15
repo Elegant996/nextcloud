@@ -2,20 +2,92 @@ name: Dependabot auto-approve
 on: pull_request
 
 permissions:
+  contents: write
   pull-requests: write
 
 jobs:
-  dependabot:
+  metadata:
+    name: 'Retrieve metadata'
     runs-on: ubuntu-latest
-    if: ${{ github.actor == 'dependabot[bot]' }}
+    if: github.actor == 'dependabot[bot]'
+
+    outputs:
+      package-ecosystem: ${{ steps.metadata.outputs.package-ecosystem }}
+      previous-version: ${{ steps.metadata.outputs.package-ecosystem == 'docker' && steps.trim.outputs.previous-version || steps.metadata.outputs.previous-version }}
+      new-version: ${{ steps.metadata.outputs.package-ecosystem == 'docker' && steps.trim.outputs.new-version || steps.metadata.outputs.new-version }}
+      update-type: ${{ steps.metadata.outputs.update-type }}
+
     steps:
       - name: Dependabot metadata
         id: metadata
         uses: dependabot/fetch-metadata@v2
         with:
           github-token: "${{ github.token }}"
+
+      - name: Trim suffix from versions
+        id: trim
+        if: steps.metadata.outputs.package-ecosystem == 'docker'
+        run: |
+          previous-version=${{ steps.metadata.outputs.previous-version }}
+          new-version=${{ steps.metadata.outputs.new-version }}
+
+          echo "previous-version=${previous-version//-fpm-alpine}" >> $GITHUB_OUTPUT
+          echo "new-version=${new-version//-fpm-alpine}" >> $GITHUB_OUTPUT
+
+  dependabot:
+    name: 'Dependabot updates'
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+
+    steps:
       - name: Approve a PR
         run: gh pr review --approve "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Auto-merge docker PRs
+        run: |
+          gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ github.token }}
+
+  update-docs:
+    needs: [metadata,dependabot]
+    name: 'Update the docs and tag the commit'
+    runs-on: ubuntu-latest
+    if: needs.metadata.outputs.package-ecosystem == 'docker'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 'main'
+    
+      - name: Update Readme
+        uses: jacobtomlinson/gha-find-replace@v3
+        with:
+          find: '${{ vars.RELEASE_VERSION }}'
+          replace: '${{ needs.metadata.outputs.new-version }}'
+          include: 'README.md'
+          regex: false
+
+      - name: Commit, push and tag
+        uses: EndBug/add-and-commit@v9
+        with:
+          committer_name: GitHub Actions
+          committer_email: actions@github.com
+          message: 'Updating package versions'
+          tag: 'v${{ needs.metadata.outputs.new-version }}'
+
+  publish-release:
+    needs: [metadata,update-docs]
+    name: 'Publish the release'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Publish release
+        uses: ncipollo/release-action@v1.16.0
+        with:
+          tag: 'v${{ needs.metadata.outputs.new-version }}'
+          token: ${{ secrets.WF_PAT }}

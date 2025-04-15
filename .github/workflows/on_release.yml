@@ -1,0 +1,105 @@
+name: Add changelog to release
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Get previous release
+        id: previous-release
+        uses: sammcoe/get-previous-release-action@v1
+
+      - name: Generate changelog
+        id: changelog
+        uses: metcalfc/changelog-generator@v4.6.2
+        with:
+          mytoken: ${{ github.token }}
+          base-ref: ${{ steps.previous-release.outputs.tag }}
+
+      - name: Update release
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          omitNameDuringUpdate: true
+          omitPrereleaseDuringUpdate: true
+          body: |
+              Changes in this Release: 
+              ${{ steps.changelog.outputs.changelog }}
+
+  build:
+    name: Build images
+    runs-on: ubuntu-latest
+
+    permissions:
+      packages: write
+
+    strategy:     
+      fail-fast: true
+      matrix:
+        arch: ["amd64"]
+
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ github.token }}
+
+      - name: Sanitize repo slug
+        uses: actions/github-script@v7
+        id: repo-slug
+        with:
+          result-encoding: string
+          script: return '${{ github.repository }}'.toLowerCase()
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/${{ steps.repo-slug.outputs.result }}
+          tags: |
+            type=raw,priority=900,value=${{ github.event.release.tag_name }},suffix=-fpm-alpine
+            type=raw,priority=800,value=${{ github.event.release.tag_name }}
+          labels: |
+            org.opencontainers.image.source="https://github.com/nextcloud/server"
+            org.opencontainers.image.url="https://nextcloud.com/"
+
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        continue-on-error: true
+        id: buildx1
+        with:
+          context: .
+          platforms: linux/${{ matrix.arch }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      # Temp workaround for failed builds
+      - name: Wait to retry
+        if: steps.buildx1.outcome != 'success'
+        run: |
+          sleep 60
+
+      # Temp workaround for failed builds
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        if: steps.buildx1.outcome != 'success'
+        with:
+          context: .
+          platforms: linux/${{ matrix.arch }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
