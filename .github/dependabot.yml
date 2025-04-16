@@ -14,7 +14,7 @@ updates:
   - directory: /
     package-ecosystem: docker
     schedule:
-      interval: weekly
+      interval: daily
     commit-message:
       prefix: build(docker)
     labels:
