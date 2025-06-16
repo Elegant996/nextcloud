@@ -77,7 +77,7 @@ jobs:
         with:
           committer_name: GitHub Actions
           committer_email: actions@github.com
-          message: 'Updating package versions'
+          message: 'Updating package version'
           tag: 'v${{ needs.metadata.outputs.new-version }}'
 
   publish-release:
