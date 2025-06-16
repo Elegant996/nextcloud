@@ -1,6 +1,6 @@
 ARG VERSION=stable
 
-FROM nextcloud:31.0.5-fpm-alpine
+FROM nextcloud:31.0.6-fpm-alpine
 
 RUN apk add --no-cache ffmpeg imagemagick
 
