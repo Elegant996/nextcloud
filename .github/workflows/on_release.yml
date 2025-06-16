@@ -58,6 +58,12 @@ jobs:
           result-encoding: string
           script: return '${{ github.repository }}'.toLowerCase()
 
+      - name: Get release version
+        id: release
+        run: |
+          version="${{ github.event.release.tag_name }}"
+          echo "version=${version//v}" >> $GITHUB_OUTPUT
+
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
@@ -65,8 +71,8 @@ jobs:
           images: |
             ghcr.io/${{ steps.repo-slug.outputs.result }}
           tags: |
-            type=raw,priority=900,value=${{ github.event.release.tag_name }},suffix=-fpm-alpine
-            type=raw,priority=800,value=${{ github.event.release.tag_name }}
+            type=raw,priority=900,value=${{ steps.release.outputs.version }},suffix=-fpm-alpine
+            type=raw,priority=800,value=${{ steps.release.outputs.version }}
           labels: |
             org.opencontainers.image.source="https://github.com/nextcloud/server"
             org.opencontainers.image.url="https://nextcloud.com/"
