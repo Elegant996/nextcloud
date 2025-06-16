@@ -28,11 +28,11 @@ jobs:
         id: trim
         if: steps.metadata.outputs.package-ecosystem == 'docker'
         run: |
-          previous-version="${{ steps.metadata.outputs.previous-version }}"
-          new-version="${{ steps.metadata.outputs.new-version }}"
+          previous_version="${{ steps.metadata.outputs.previous-version }}"
+          new_version="${{ steps.metadata.outputs.new-version }}"
 
-          echo "previous-version=$(previous-version//-fpm-alpine)" >> $GITHUB_OUTPUT
-          echo "new-version=$(new-version//-fpm-alpine)" >> $GITHUB_OUTPUT
+          echo "previous-version=${previous_version//-fpm-alpine}" >> $GITHUB_OUTPUT
+          echo "new-version=${new_version//-fpm-alpine}" >> $GITHUB_OUTPUT
 
   dependabot:
     name: 'Dependabot updates'
