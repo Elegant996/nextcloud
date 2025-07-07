@@ -3,7 +3,7 @@
 
 Caddy
 -----------------------------------------------
-The `Caddyfile` in this repo can be used in place of the `nginx` configuration which can be found under the [Nextcloud in the webroot of NGINX](https://docs.nextcloud.com/server/latest/admin_manual/installation/nginx.html#nextcloud-in-the-webroot-of-nginx) documentation.
+The `Caddyfile` in this repo can be used in place of the `nginx` configuration which can be found under the [Nextcloud in the webroot of NGINX](https://docs.nextcloud.com/server/latest/admin_manual/installation/nginx.html#nextcloud-in-the-webroot-of-nginx) documentation. Inspiration taken from [this thread](https://help.nextcloud.com/t/nextcloud-docker-compose-setup-with-caddy-2024/204846).
 
 Docker
 -----------------------------------------------
