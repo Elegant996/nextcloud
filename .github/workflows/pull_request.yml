@@ -87,7 +87,7 @@ jobs:
 
     steps:
       - name: Publish release
-        uses: ncipollo/release-action@v1.16.0
+        uses: ncipollo/release-action@v1.20.0
         with:
           tag: 'v${{ needs.metadata.outputs.new-version }}'
-          token: ${{ secrets.WF_PAT }}
+          token: '${{ secrets.WF_PAT }}'

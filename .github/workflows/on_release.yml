@@ -30,7 +30,7 @@ jobs:
           base-ref: ${{ steps.previous-release.outputs.tag }}
 
       - name: Update release
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@v1.20.0
         with:
           allowUpdates: true
           omitNameDuringUpdate: true
