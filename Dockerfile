@@ -1,4 +1,4 @@
-FROM nextcloud:31.0.9-fpm-alpine
+FROM nextcloud:32.0.0-fpm-alpine
 
 RUN set -ex; \
     \
