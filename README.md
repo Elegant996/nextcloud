@@ -10,5 +10,5 @@ Docker
 This repo will periodically check nextcloud for updates and build a container image from scratch using an Alpine base layout:
 
 ```
-docker pull ghcr.io/elegant996/nextcloud:32.0.3-fpm-alpine
+docker pull ghcr.io/elegant996/nextcloud:33.0.5-fpm-alpine
 ```
