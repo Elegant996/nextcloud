@@ -4,7 +4,6 @@ RUN set -ex; \
     \
     apk add --no-cache \
         ffmpeg \
-        imagemagick \
         netcat-openbsd \
         procps \
         samba-client \
