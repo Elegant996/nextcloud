@@ -241,10 +241,12 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        include: ${{ fromJSON(needs.check-upstream.outputs.update-matrix) }}
+        include: ${{ fromJSON(needs.commit-and-push.outputs.matrix-include) }}
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ matrix.tag }}
 
       - name: Publish release
         uses: ncipollo/release-action@v1
