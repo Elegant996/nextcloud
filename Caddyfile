@@ -1,183 +1,208 @@
 {
-        admin unix//run/caddy/caddy-admin.sock
-        default_bind {$POD_IP} 127.0.0.1
+	admin unix//run/caddy/caddy-admin.sock
+	default_bind {$POD_IP} 127.0.0.1
 
-        http_port 8080
-        https_port 8443
+	http_port 8080
+	https_port 8443
 
-        ocsp_stapling off
+	ocsp_stapling off
 
-        servers {$POD_IP}:8080 {
-                name health
-                protocols h1 h2c
-        }
+	servers {$POD_IP}:8080 {
+		name health
+		protocols h1 h2c
+	}
 
-        servers {$POD_IP}:8443 {
-                name nextcloud
-                trusted_proxies static private_ranges
-        }
+	servers {$POD_IP}:8443 {
+		name nextcloud
+		trusted_proxies static {$POD_IP} 127.0.0.1/32 ::1/128
+		trusted_proxies_strict
+		strict_sni_host insecure_off
+	}
 
-        log default {
-                format console
-        }
+	log {
+		format filter {
+			wrap json {
+				time_format rfc3339
+			}
+		}
+		level WARN
+	}
 }
 
 {$POD_IP}:8080 {
-        handle /health-check {
-                @goingDown vars {http.shutting_down} true
-                respond @goingDown "Bye-bye in {http.time_until_shutdown}" 503
-                respond 200
-        }
+	log_skip
 
-        php_fastcgi /ping unix//run/php-fpm/php-fpm.sock {
-                index off
-        }
+	handle /health-check {
+		@goingDown vars {http.shutting_down} true
+		respond @goingDown "Bye-bye in {http.time_until_shutdown}" 503
+		respond 200
+	}
 
-        log_skip
+	php_fastcgi /ping unix//run/php-fpm/php-fpm.sock {
+		index off
+	}
 }
 
 :8443 {
-        tls /tls/tls.crt /tls/tls.key
+	tls /tls/tls.crt /tls/tls.key
 
-        request_body {
-                max_size 512MB
-        }
+	# Path to the root of your installation
+	root * /var/www/html
 
-        encode {
-                zstd
-                gzip 4
+	log_name nextcloud
 
-                minimum_length 256
+	# Add headers to serve security related headers
+	header {
+		Permissions-Policy "accelerometer=(), ambient-light-sensor=(), autoplay=(), battery=(), camera=(), cross-origin-isolated=(), display-capture=(), document-domain=(), encrypted-media=(), execution-while-not-rendered=(), execution-while-out-of-viewport=(), fullscreen=(), geolocation=(), gyroscope=(), keyboard-map=(), magnetometer=(), microphone=(), midi=(), navigation-override=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), sync-xhr=(), usb=(), web-share=(), xr-spatial-tracking=()"
+		?Referrer-Policy "no-referrer"
+		?Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		?X-Content-Type-Options "nosniff"
+		?X-Frame-Options "SAMEORIGIN"
+		?X-Permitted-Cross-Domain-Policies "none"
+		?X-Robots-Tag "noindex, nofollow"
+	}
 
-                match {
-                        header Content-Type application/atom+xml
-                        header Content-Type application/javascript
-                        header Content-Type application/json
-                        header Content-Type application/ld+json
-                        header Content-Type application/manifest+json
-                        header Content-Type application/rss+xml
-                        header Content-Type application/vnd.geo+json
-                        header Content-Type application/vnd.ms-fontobject
-                        header Content-Type application/wasm
-                        header Content-Type application/x-font-ttf
-                        header Content-Type application/x-web-app-manifest+json
-                        header Content-Type application/xhtml+xml
-                        header Content-Type application/xml
-                        header Content-Type font/opentype
-                        header Content-Type image/bmp
-                        header Content-Type image/svg+xml
-                        header Content-Type image/x-icon
-                        header Content-Type text/cache-manifest
-                        header Content-Type text/css
-                        header Content-Type text/javascript
-                        header Content-Type text/plain
-                        header Content-Type text/vcard
-                        header Content-Type text/vnd.rim.location.xloc
-                        header Content-Type text/vtt
-                        header Content-Type text/x-component
-                        header Content-Type text/x-cross-domain-policy
-                }
-        }
+	request_body {
+		max_size 10G
+	}
 
-        header {
-                Permissions-Policy "accelerometer=(), ambient-light-sensor=(), autoplay=(), battery=(), camera=(), cross-origin-isolated=(), display-capture=(), document-domain=(), encrypted-media=(), execution-while-not-rendered=(), execution-while-out-of-viewport=(), fullscreen=(), geolocation=(), gyroscope=(), keyboard-map=(), magnetometer=(), microphone=(), midi=(), navigation-override=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), sync-xhr=(), usb=(), web-share=(), xr-spatial-tracking=()"
-                Referrer-Policy "no-referrer"
-                Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-                X-Content-Type-Options "nosniff"
-                X-Frame-Options "SAMEORIGIN"
-                X-Permitted-Cross-Domain-Policies "none"
-                X-Robots-Tag "noindex, nofollow"
-                X-XSS-Protection "1; mode=block"
-        }
+	# Enable gzip but do not remove ETag headers
+	encode {
+		zstd
+		gzip 4
 
-        root * /var/www/html
+		minimum_length 256
 
-        route {
-                @msDavClient {
-                        header User-Agent DavClnt*
-                        path /
-                }
-                redir @msDavClient /remote.php/webdav/{uri} temporary
+		match {
+			header Content-Type application/atom+xml
+			header Content-Type application/javascript
+			header Content-Type application/json
+			header Content-Type application/ld+json
+			header Content-Type application/manifest+json
+			header Content-Type application/rss+xml
+			header Content-Type application/vnd.geo+json
+			header Content-Type application/vnd.ms-fontobject
+			header Content-Type application/wasm
+			header Content-Type application/x-font-ttf
+			header Content-Type application/x-web-app-manifest+json
+			header Content-Type application/xhtml+xml
+			header Content-Type application/xml
+			header Content-Type font/opentype
+			header Content-Type image/bmp
+			header Content-Type image/svg+xml
+			header Content-Type image/x-icon
+			header Content-Type text/cache-manifest
+			header Content-Type text/css
+			header Content-Type text/javascript
+			header Content-Type text/plain
+			header Content-Type text/vcard
+			header Content-Type text/vnd.rim.location.xloc
+			header Content-Type text/vtt
+			header Content-Type text/x-component
+			header Content-Type text/x-cross-domain-policy
+		}
+	}
 
-                route /.well-known/* {                        
-                        redir /.well-known/carddav /remote.php/dav/ permanent
-                        redir /.well-known/caldav /remote.php/dav/ permanent
+	route {
+		# Rule borrowed from `.htaccess` to handle Microsoft DAV clients
+		@msDavClient {
+			header User-Agent DavClnt*
+			path /
+		}
+		redir @msDavClient /remote.php/webdav/{uri} temporary
 
-                        @well-known-static {
-                                path /.well-known/acme-challenge /.well-known/acme-challenge/*
-                                path /.well-known/pki-validation /.well-known/pki-validation/*
-                        }
-                        handle @well-known-static {
-                                try_files {path} {path}/ =404
-                                file_server
-                        }
+		# Add exception for `/.well-known` so that clients can still access it
+		# despite the existence of the `error @internal 404` rule which would
+		# otherwise handle requests for `/.well-known` below
+		route /.well-known/* {
+			redir /.well-known/carddav /remote.php/dav/ permanent
+			redir /.well-known/caldav /remote.php/dav/ permanent
 
-                        @well-known-service path /.well-known/nodeinfo /.well-known/webfinger
-                        handle @well-known-service {
-                                header >X-Nextcloud-Well-Known "1"
-                                respond 200
-                        }
+			@well-known-static {
+				path /.well-known/acme-challenge /.well-known/acme-challenge/*
+				path /.well-known/pki-validation /.well-known/pki-validation/*
+			}
+			handle @well-known-static {
+				try_files {path} {path}/ =404
+				file_server
+			}
 
-                        redir * /index.php{uri} permanent
-                }
+			@well-known-service path /.well-known/nodeinfo /.well-known/webfinger
+			handle @well-known-service {
+				header >X-Nextcloud-Well-Known "1"
+				respond 200
+			}
 
-                redir /privacy https://www.privacypolicies.com/privacy/view/<UUID> 308
+			redir * /index.php{uri} permanent
+		}
 
-                handle /robots.txt {
-                        file_server
-                        log_skip
-                }
+		# Update notifications for Nextcloud clients
+		# handle /push/* {
+		# 	uri strip_prefix /push
+		# 	reverse_proxy unix//run/notify_push/notify_push.sock
+		# }
 
-                @internal {
-                        path /build /build/*
-                        path /tests /tests/*
-                        path /config /config/*
-                        path /lib /lib/*
-                        path /3rdparty /3rdparty/*
-                        path /templates /templates/*
-                        path /data /data/*
+		handle /robots.txt {
+			file_server
+			log_skip
+		}
 
-                        path /.*
-                        path /autotest*
-                        path /occ*
-                        path /issue*
-                        path /indie*
-                        path /db_*
-                        path /console*
-                }
-                error @internal 404
+		@internal {
+			path /build /build/*
+			path /tests /tests/*
+			path /config /config/*
+			path /lib /lib/*
+			path /3rdparty /3rdparty/*
+			path /templates /templates/*
+			path /data /data/*
 
-                @assets {
-                        path *.css *.js *.mjs *.svg *.gif *.ico *.jpg *.png *.webp *.wasm *.tflite *.map *.ogg *.flac
-                        file {path}
-                }
-                handle @assets {
-                        header Cache-Control "public, max-age=15778463, immutable"
-                        header *.mjs Content-Type text/javascript
-                        header *.wasm Content-Type application/wasm
-                        file_server {
-                                precompressed gzip
-                        }
-                        log_skip
-                }
+			path /.*
+			path /autotest*
+			path /occ*
+			path /issue*
+			path /indie*
+			path /db_*
+			path /console*
 
-                @fonts {
-                        path *.otf *.woff *.woff2
-                        file {path}
-                }
-                handle @fonts {
-                        header Cache-Control "max-age=2592000"
-                        file_server
-                        log_skip
-                }
+			path /composer.json /composer.lock
+			path /package-lock.json /package.json
+			path /core/shipped.json
+		}
+		error @internal 404
 
-                redir /remote/* /remote.php{path} permanent
+		@assets {
+			path *.css *.js *.mjs *.svg *.gif *.ico *.jpg *.png *.webp *.wasm *.tflite *.map *.ogg *.flac *.mp4 *.webm
+			file {path}
+		}
+		handle @assets {
+			header Cache-Control "public, max-age=15778463, immutable"
+			header *.mjs Content-Type text/javascript
+			header *.wasm Content-Type application/wasm
+			file_server {
+				precompressed gzip
+			}
+			log_skip
+		}
 
-                @notPhpOrDir not path /*.php /*.php/* / /*/
-                file_server @notPhpOrDir {
-                        pass_thru
-                }
+		@fonts {
+			path *.otf *.woff *.woff2
+			file {path}
+		}
+		handle @fonts {
+			header Cache-Control "max-age=2592000"
+			file_server
+			log_skip
+		}
 
+		redir /remote/* /remote.php{path} permanent
+
+		try_files {path} {path}/
+		@notPhpOrDir not path *.php *.php/* / /*/
+		file_server @notPhpOrDir {
+			pass_thru
+		}
+
+		# Rewrites all other requests to be prepended by “/index.php” unless they match a known-valid PHP file path.
 		@notLegacy {
 			path *.php *.php/
 			not path /index*
@@ -192,13 +217,16 @@
 			not path /updater/*
 			not path */richdocumentscode/proxy*
 		}
-		rewrite @notLegacy /index.php{uri}
+		rewrite @notLegacy /index.php{path}
 
-                php_fastcgi unix//run/php-fpm/php-fpm.sock {
-                        env front_controller_active true
-                        request_buffers 512KB
-                        header_down -X-Powered-By
-                        capture_stderr
-                }
-        }
+		# Let everything else be handled by the PHP-FPM component
+		php_fastcgi unix//run/php-fpm/php-fpm.sock {
+			request_buffers 512KB
+
+			header_down -X-Powered-By
+
+			env front_controller_active true
+			capture_stderr
+		}
+	}
 }
