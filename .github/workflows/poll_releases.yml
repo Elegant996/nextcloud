@@ -65,7 +65,7 @@ jobs:
         run: |
           IMAGE=$(curl -sL --request GET \
             --url "https://hub.docker.com/v2/repositories/library/nextcloud/tags/?page_size=1000" \
-            | jq -r '.results | .[] | select(.name | contains("${{ steps.upstream.outputs.version }}-fpm-alpine")) | .name'
+            | jq -r '.results | .[] | select(.name | contains("${{ steps.upstream.outputs.version }}-fpm-alpine")) | .name')
 
           if [[ -n "$IMAGE" ]]; then
             echo "exists=true" >> $GITHUB_OUTPUT
