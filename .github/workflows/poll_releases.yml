@@ -147,7 +147,7 @@ jobs:
       - name: Push commits
         if: env.release-version != '' || env.prerelease-version != ''
         run: |
-          git push
+          git push --tags
 
   build:
     needs: [commit-and-push]
