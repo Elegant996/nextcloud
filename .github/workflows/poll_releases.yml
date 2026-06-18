@@ -70,7 +70,7 @@ jobs:
           fi
 
       - name: Store release
-        id: release
+        id: releases
         if: ${{ !fromJSON(steps.check-tag.outputs.exists) && steps.check-image.outputs.exists }}
         run: |
             echo "${prerelease}-version=${{ steps.upstream.outputs.version }}" >> "$GITHUB_OUTPUT"
@@ -92,9 +92,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-    
-      - run: |
-          echo "${{ env.release-version }}"
 
       - name: Update Readme (release)
         if: env.release-version != ''
