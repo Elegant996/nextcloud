@@ -7,7 +7,7 @@ RUN set -ex; \
         netcat-openbsd \
         procps \
         samba-client \
-#       libreoffice \
+        # libreoffice \
     ;
 
 RUN set -ex; \
@@ -31,4 +31,7 @@ RUN set -ex; \
             | awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
     )"; \
     apk add --virtual .nextcloud-phpext-rundeps $runDeps; \
-    apk del .build-deps
+    apk del .build-deps; \
+    # workaround redis issues
+    touch /usr/local/etc/php/conf.d/redis-session.ini; \
+    chown 82:82 /usr/local/etc/php/conf.d/redis-session.ini
