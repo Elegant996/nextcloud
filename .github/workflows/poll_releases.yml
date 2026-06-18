@@ -27,6 +27,7 @@ jobs:
 
 
   check-upstream:
+    needs: [define-matrix]
     name: Check upstream version
     runs-on: ubuntu-latest
 
