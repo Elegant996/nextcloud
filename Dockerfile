@@ -1,4 +1,6 @@
-FROM nextcloud:34.0.0-fpm-alpine
+ARG VERSION=stable
+
+FROM nextcloud:${VERSION}-fpm-alpine
 
 RUN set -ex; \
     \
