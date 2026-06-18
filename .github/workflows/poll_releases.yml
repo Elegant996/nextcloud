@@ -93,6 +93,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
     
+      - run: |
+          echo "${{ env.release-version }}"
+
       - name: Update Readme (release)
         if: env.release-version != ''
         uses: jacobtomlinson/gha-find-replace@v3
