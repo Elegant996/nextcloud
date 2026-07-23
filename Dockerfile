@@ -35,5 +35,7 @@ RUN set -ex; \
     apk add --virtual .nextcloud-phpext-rundeps $runDeps; \
     apk del .build-deps; \
     # workaround redis issues
-    touch /usr/local/etc/php/conf.d/redis-session.ini; \
-    chown 82:82 /usr/local/etc/php/conf.d/redis-session.ini
+    sed -i 's|\s*configure_redis_session$|\
+    if [ ! -f "/usr/local/etc/php/conf.d/redis-session.ini" ]; then\
+        configure_redis_session\
+    fi|g' /entrypoint.sh
