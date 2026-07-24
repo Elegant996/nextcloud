@@ -92,6 +92,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: main
 
       - name: Update Readme (release)
         if: env.release-version != ''
