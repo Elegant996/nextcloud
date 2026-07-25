@@ -36,6 +36,6 @@ RUN set -ex; \
     apk del .build-deps; \
     # workaround redis issues
     sed -i 's|\s*configure_redis_session$|\
-    if [ ! -f "/usr/local/etc/php/conf.d/redis-session.ini" ]; then\
-        configure_redis_session\
+    if [ ! -f "/usr/local/etc/php/conf.d/redis-session.ini" ]; then\n\
+        configure_redis_session\n\
     fi|g' /entrypoint.sh
