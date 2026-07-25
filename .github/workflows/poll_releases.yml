@@ -149,7 +149,7 @@ jobs:
       - name: Push commits
         if: env.release-version != '' || env.prerelease-version != ''
         run: |
-          git push --tags
+          git push origin HEAD:main --tags
 
   build:
     needs: [commit-and-push]
