@@ -106,13 +106,10 @@ jobs:
 
       - name: Commit changes (release)
         if: env.release-version != ''
-        uses: EndBug/add-and-commit@v11
-        with:
-          committer_name: GitHub Actions
-          committer_email: actions@github.com
-          message: 'docs: Bump image version to ${{ env.release-version }}'
-          push: false
-          tag: 'v${{ env.release-version }} --force'
+        run: |
+          git add README.md
+          git commit -m "docs: Bump image version to ${{ env.release-version }}"
+          git tag -f "v${{ env.release-version }}" HEAD
 
       - name: Update Readme (prerelease)
         if: env.prerelease-version != ''
@@ -125,13 +122,10 @@ jobs:
 
       - name: Commit changes (prerelease)
         if: env.prerelease-version != ''
-        uses: EndBug/add-and-commit@v11
-        with:
-          committer_name: GitHub Actions
-          committer_email: actions@github.com
-          message: 'docs: Bump image version to ${{ env.prerelease-version }}'
-          push: false
-          tag: 'v${{ env.prerelease-version }} --force'
+        run: |
+          git add README.md
+          git commit -m "docs: Bump image version to ${{ env.prerelease-version }}"
+          git tag -f "v${{ env.prerelease-version }}" HEAD
 
       - name: Define tags
         id: tag-matrix
@@ -149,7 +143,13 @@ jobs:
       - name: Push commits
         if: env.release-version != '' || env.prerelease-version != ''
         run: |
-          git pull origin main --rebase
+          # Fetch any external modifications that landed during the run execution
+          git fetch origin main
+          
+          # Cleanly stack your generated runner commits over the remote branch head
+          git rebase origin/main
+          
+          # Explicitly force-sync the branch tracking reference and tag markers to GitHub
           git push origin HEAD:main --tags --force
 
   build:
