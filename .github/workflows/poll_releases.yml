@@ -112,7 +112,7 @@ jobs:
           committer_email: actions@github.com
           message: 'docs: Bump image version to ${{ env.release-version }}'
           push: false
-          tag: 'v${{ env.release-version }}'
+          tag: 'v${{ env.release-version }} --force'
 
       - name: Update Readme (prerelease)
         if: env.prerelease-version != ''
@@ -131,7 +131,7 @@ jobs:
           committer_email: actions@github.com
           message: 'docs: Bump image version to ${{ env.prerelease-version }}'
           push: false
-          tag: 'v${{ env.prerelease-version }}'
+          tag: 'v${{ env.prerelease-version }} --force'
 
       - name: Define tags
         id: tag-matrix
@@ -149,7 +149,8 @@ jobs:
       - name: Push commits
         if: env.release-version != '' || env.prerelease-version != ''
         run: |
-          git push origin HEAD:main --tags
+          git pull origin main --rebase
+          git push origin HEAD:main --tags --force
 
   build:
     needs: [commit-and-push]
